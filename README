@@ -1,0 +1,58 @@
+This program calculates fragmentation statistics about the ext2 file system.
+The meaning of reported numbers is explained in the accompanying man-page
+which may be formatted with the following commands:
+
+  groff -Tascii -mdoc ext2frag.1 | more
+
+(try using nroff if you don't have groff).
+
+BUILDING
+========
+
+You need to have installed cmake (www.cmake.org), boost (www.boost.org) and
+libext2fs library (part of e2fsprogs) and corresponding development packages.
+The following procedure builds the program:
+
+  $ cmake .
+  $ make
+
+The ext2frag program is left in the working directory.  The configuration
+procedure looks for the necessary libraries only in standard places:
+/usr/{include,lib} and /usr/local/{include,lib}.  If you have packages
+installed at other places, the configuration will fail.  In that case, edit
+the CMakeLists.txt file and repeat the steups above.
+
+TODO
+====
+
+  - discover the reason of discrepancy in free block numbers
+
+Some ideas for future enhancements:
+
+  - calculate fragmentation data also for directories
+  - separate calculation for metadata
+  - more selective output
+
+COPYRIGHT NOTICE
+================
+
+  ext2frag.cc, (c) 2008 Zeljko Vrba <zvrba@ifi.uio.no>
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to
+  deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+  sell copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  IN THE SOFTWARE.
+

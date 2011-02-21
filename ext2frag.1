@@ -1,0 +1,168 @@
+.Dd Aug 4, 2008
+.Os linux
+.Dt EXT2FRAG 8
+.Sh NAME
+.Nm ext2frag
+.Nd Report fragmentation statistics for an EXT2 file system
+.Sh SYNOPSIS
+.Nm
+.Op Fl v
+.Ar IMAGE
+.Sh DESCRIPTION
+The
+.Nm
+directly accesses an EXT2 file system, given
+by the
+.Ar IMAGE
+argument, in order to gather file and free space fragmentation statistics.
+.Ar IMAGE
+may be a regular file or a raw block device which may hold even a mounted file
+system.  The output consists of a series of lines, each prefixed with a key
+letter followed by a colon, followed by information related to the key.  The
+output format has been designed for easy parsing by machines, rather than for
+human consumption.
+.Pp
+In the rest of this document, the word
+.Do
+.Sy extent
+.Dc
+is used to denote a contiguous range of file system blocks.  For example,
+blocks 618, 619 and 620 comprise a single extent of size 3.  See section
+FRAGMENTATION for explanation of various statistics computed by this program.
+.Ss SUMMARY STATISTICS
+In default mode, the program reports only summary statistic as a series of
+.Li H:
+lines, where each line has
+.Li H:key=value
+format.  See sections below for short explanation of various fragmentation
+types and metrics that are reported.  The following keys are currently
+defined:
+.Pp
+.Bl -tag -width "file_fragments" -compact -offset indent
+.It Li block_size
+The file system's block size (EXT2 supports a block size of 1024, 2048 or 4096
+bytes).
+.It Li total_blocks
+Total size of file system (in blocks).
+.It Li free_blocks
+Number of free (unallocated) blocks.
+.It Li free_extents
+Number of free extents.
+.It Li free_extent_size_summary
+5-number summary of free extent size distribution.
+.It Li ext_frag
+External fragmentation ratio (0-1); 1 is worst.
+.It Li total_files
+Total number of
+.Em regular
+files on the file system.
+.It Li file_blocks
+Number of blocks allocated for files.
+.It Li file_bytes
+Total number of bytes needed for files.
+.It Li file_fragments
+Total number of file data fragments on the file system.
+.It Li file_size_summary
+5-number summary of file size distribution.
+.It Li data_frag
+Data fragmentation ratio (>= 1); 1 is ideal.
+.It Li int_frag
+Internal fragmentation ratio (>= 1); 1 is ideal.
+.It Li backward_files
+Number of files with backward jumps.
+.It Li backward_jumps
+Total number of backward jumps for all files.
+.It Li file_locations_summary
+5-number summary of disk locations used by file data.
+.El
+.Pp
+The 5-number summary of a size distribution consists of the following 5
+numbers: minimum, 1st quartile, median, 2nd quartile and maximum.  It is
+useful for estimating skewness of the distribution because it reflects the
+clustering trends of the data: 50% of all values fall into the range between
+1st and 3rd quartile.
+.Ss RAW OUTPUT
+When the
+.Fl v
+option is given, raw file system information is reported in series of
+.Li F:
+and
+.Li R:
+lines.  The
+.Li F:
+line contains data about free extents formatted as a comma-separeted list of
+block and block ranges, for example:
+.Dl F:125892-125908,125910,125913-126975,
+(block list always ends with a trailing comma).  Ranges are
+.Em inclusive.
+.Pp
+.Li R:
+lines report data about
+.Em regular files.
+One line for each file is output with fields separated by semicolons, for
+example:
+.Dl R:30691;1532176;79879,80028-80031,80115-80121,80123-80485,
+The fields are inode number, file size in bytes and list of block ranges used
+by file data.
+.Sh FRAGMENTATION
+.Sy External fragmentation
+is the lack of contiguous storage (i.e. large free extents): there may be a
+lot of free space on disk, but it is chopped up into many small extents.  The
+external fragmentation ratio
+.Li ext_frag
+is computed as
+.Li ext_frag = 1 - M / free_blocks
+where
+.Li M
+is the size (in blocks) of largest free extent.  The value is between 0 (best)
+and 1 (worst).  The best value is achieved when
+.Li M == free_blocks
+i.e. when all free space is in a single extent.  External fragmentation
+directly contributes to file data fragmentation.
+.Pp
+.Sy Internal fragmentation
+is loss of usable space that results from block-oriented nature of EXT2 file
+system.  Since all space is allocated in multiples of block size, the unused
+space at the end of each file (up to the block boundary) is wasted and
+contributes to internal fragmentation.  The internal fragmentation ratio is
+computed as follows:
+.Li int_frag = file_blocks * block_size / file_bytes
+The value is always >=1, 1 being best.
+.Pp
+.Sy Data fragmentation
+is a consequence of external fragmentation: when a file is too large to be
+placed in the largest free extent, it must be split into multiple extents
+(fragments).  The ratio reported by the program is
+.Li data_frag = file_fragments / total_files
+(the average number of fragments per file).  Best value is 1 (no file is
+fragmented).
+.Pp
+.Do Sy Backward files Dc
+are stored in such a way that reading a file sequentially, by increasing
+.Em logical
+block numbers, sometimes leads to a
+.Em backwards
+jump in
+.Em physical (file system)
+block numbers.  This may be detected by inspecting the file data block list:
+if the block numbers are not strictly increasing, there are backward jumps in
+the file.  This is significant performance indicator due to the way hard disks
+work.
+.Sh WARNING
+This program accesses the file system directly, which means that the usual OS
+protection mechanisms are not in place.  In the unlikely case of bugs, either
+in this program or in supporting libraries, data loss may result.
+.Sy USE AT OWN RISK!
+.Sh BUGS
+The program currently does not support file systems with large files.
+.Pp
+There is discrepancy between the number of free blocks reported by dumpe2fs,
+which takes the information from superblock, and this program which computes
+the information from available block bitmaps; the discrepancy happens even on
+.Em unmounted
+file systems.  Further checks have revealed that both this program and
+dumpe2fs report the
+.Em same
+set of free blocks, so the cause of the discrepancy still remains unknown.
+.Sh SEE ALSO
+The libext2fs library is part of the e2fsprogs package.
